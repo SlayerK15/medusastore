@@ -28,7 +28,7 @@ services:
       NODE_ENV: docker
       DATABASE_URL: postgres://medusa:medusa@postgres:5432/medusa?sslmode=disable
       ADMIN_CORS: http://localhost:9000
-      STORE_CORS: http://localhost:8000,http://localhost:3000
+      STORE_CORS: http://localhost:8000,http://localhost:3000,http://medusa-storefront:8000
       AUTH_CORS: http://localhost:9000
       JWT_SECRET: supersecret
       COOKIE_SECRET: supersecret
@@ -38,6 +38,30 @@ services:
     ports:
       - "9000:9000"
     working_dir: /app
+
+
+  medusa-storefront:
+    build:
+      context: ./my-medusa-store-storefront
+      dockerfile: Dockerfile
+    depends_on:
+      - medusa-backend
+    environment:
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+      NEXT_PUBLIC_BASE_URL: http://localhost:8000
+      MEDUSA_BACKEND_URL: http://medusa-backend:9000
+      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: pk_test_key
+      NEXT_PUBLIC_DEFAULT_REGION: us
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - "8000:8000"
+    working_dir: /app
+    volumes:
+      - ./my-medusa-store-storefront:/app
+      - /app/node_modules
+      - /app/.next
+
 
 volumes:
   pgdata:
