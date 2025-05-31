@@ -1,0 +1,51 @@
+name: Destroy Medusa Store Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm destruction'
+        required: true
+        default: ''
+
+env:
+  AWS_REGION: ap-south-1
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Validate destroy confirmation
+      run: |
+        if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
+          echo "❌ Destruction not confirmed. You must type 'DESTROY' to proceed."
+          exit 1
+        fi
+        echo "✅ Destruction confirmed"
+
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Destroy infrastructure
+      working-directory: ./terraform
+      run: |
+        echo "🔍 Initializing Terraform..."
+        terraform init
+        
+        echo "📋 Planning destruction..."
+        terraform plan -destroy
+        
+        echo "💥 Destroying infrastructure..."
+        terraform destroy -auto-approve
+        
+        echo "✅ Infrastructure destroyed successfully!"

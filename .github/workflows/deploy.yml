@@ -1,0 +1,40 @@
+name: Deploy Medusa Store
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: medusa-store
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to ECR
+      run: aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 841162667281.dkr.ecr.ap-south-1.amazonaws.com
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t 841162667281.dkr.ecr.ap-south-1.amazonaws.com/medusa-store:latest ./my-medusa-store
+        docker push 841162667281.dkr.ecr.ap-south-1.amazonaws.com/medusa-store:latest
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Deploy infrastructure
+      working-directory: ./terraform
+      run: |
+        terraform init
+        terraform apply -auto-approve
